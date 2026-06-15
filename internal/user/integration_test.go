@@ -20,7 +20,7 @@ var testDB *sql.DB
 // TestMain handles the global database setup and teardown for our integration tests
 func TestMain(m *testing.M) {
 	// 1. Connect to our isolated Docker test database (Port 5433)
-	connStr := "postgres://postgres:test_password_123@localhost:5434/todo_test_db?sslmode=disable"
+	connStr := "postgres://postgres:test_password_123@127.0.0.1:5434/todo_test_db?sslmode=disable"
 	var err error
 	testDB, err = sql.Open("postgres", connStr)
 	if err != nil {
