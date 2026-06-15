@@ -1,0 +1,44 @@
+version: "3.8"
+
+services:
+  # Service 1: Your Go Web Server
+  web:
+    build: .
+    ports:
+      - "8080:8080" # Maps port 8080 on your computer to 8080 inside the container
+    environment:
+      - DB_CONN=${DB_CONN}
+      - MY_SECRET_KEY=${MY_SECRET_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      db:
+        condition: service_healthy # Wait for Postgres to be fully ready before starting Go
+    stop_signal: SIGTERM
+    stop_grace_period: 15s
+
+  # Service 2: The Postgres Database
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    ports:
+      - "5432:5432" # Allows you to inspect the DB using tools like DBeaver or pgAdmin
+    volumes:
+      - postgres_data:/var/lib/postgresql/data # Keeps your todo data safe even if the container stops
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gouser -d tododb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+  test_db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: test_password_123
+      POSTGRES_DB: todo_test_db
+    ports:
+      - "5434:5432"
+volumes:
+  postgres_data:

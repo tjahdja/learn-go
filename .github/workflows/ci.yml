@@ -1,0 +1,50 @@
+# .github/workflows/ci.yml
+name: Go Backend Test Suite
+
+# Trigger this workflow every time code is pushed or a PR is opened against main
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+
+    # Spin up a live Postgres service container directly inside GitHub's remote runner
+    services:
+      postgres_test:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: test_password_123
+          POSTGRES_DB: todo_test_db
+        # Map GitHub's local machine port 5433 directly to the test container's inner 5432
+        ports:
+          - 5433:5432
+        # Ensure Postgres is completely booted and healthy before the Go steps begin
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      # 1. Pull down your repository code onto the virtual machine
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Install the correct, official Go compiler environment
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22" # Matches your internal go.mod engine version
+
+      # 3. Cache dependencies to make future pipeline runs blazing fast
+      - name: Download Go modules
+        run: go mod download
+
+      # 4. Execute your test suites exactly like you did on your own computer!
+      - name: Run Test Suites
+        run: go test -v ./...
